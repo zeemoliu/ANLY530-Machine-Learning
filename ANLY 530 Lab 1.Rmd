@@ -1,0 +1,246 @@
+---
+title: "ANLY 530 Lab1"
+author: "Zimo Liu"
+output:
+  html_document:
+    df_print: paged
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Method 1. Tree-based classification
+```{r my-first-chunk, results='asis'}
+credit <- read.csv("C:/Users/zeemo/Desktop/Files/Data/RStudio/credit.csv", header=TRUE) 
+str(credit)
+```
+
+## Step 2: Exploring the data
+```{r}
+summary(credit$amount)
+table(credit$Creditability)
+set.seed(12345)
+credit_rand <- credit[order(runif(1000)), ]
+summary(credit$Credit.Amount)
+credit_train <-credit_rand[1:900, ]
+credit_test <-credit_rand[901:1000, ]
+prop.table(table(credit_train$Creditability))
+prop.table(table(credit_test$Creditability))
+```
+
+##Step 3:  Training a model on the data
+```{r}
+library(C50)
+credit_train$Creditability <- as.factor(credit_train$Creditability)
+credit_test$Creditability <- as.factor(credit_test$Creditability)
+credit_model <- C5.0(x = credit_train[-1], y = credit_train$Creditability)
+credit_model
+```
+
+##Step 4: Evaluating Model Performance
+```{r}
+cred_pred <- predict(credit_model, credit_test)
+if (!require("gmodels")) {
+  install.packages("gmodels")
+  library(gmodels)
+}
+CrossTable(credit_test$Creditability, cred_pred, prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE, dnn = c('Actual Creditability', 'Predicted Creditability'))
+(p <- table(cred_pred, credit_test$Creditability))
+(Accuracy <- sum(diag(p))/sum(p)*100)
+```
+#Q1
+### It does not mean 100% has a perfect model, however, it does indicate that the model fit well. However, in case to avoide the situation of overmatch, we need further tests or other parameters. 
+
+# Method 2
+```{r}
+if (!require("randomForest")) {
+  install.packages("randomForest")
+  library(randomForest)
+}
+credit_train$Creditability <-as.factor(credit_train$Creditability) 
+random_model <-randomForest(Creditability ~ . , data= credit_train)
+summary(random_model)
+cred_pred <- predict(random_model, credit_test)
+(p <- table(cred_pred, credit_test$Creditability))
+(Accuracy <- sum(diag(p))/sum(p)*100)
+```
+
+## Q2 
+### Three most imprtant features are Account Balance, Duration of credit and Payment Status.
+```{r}
+importance(random_model)
+```
+## Q2 Change to 23458
+```{r}
+set.seed(23458)
+random_model1 <- randomForest(Creditability ~ (Credit.Amount + Account.Balance + Age..years.), data= credit_train)
+cred_pred1 <- predict(random_model1, credit_test)
+(p1 <- table(cred_pred1, credit_test$Creditability))
+```
+
+```{r}
+(Accuracy <- sum(diag(p1))/sum(p1)*100)
+```
+
+# Method 3.Adding regression to trees
+```{r}
+wine <- read.csv("C:/Users/zeemo/Desktop/Files/Data/RStudio/whitewines.csv")
+str(wine)
+```
+
+##check  to  see  if  the  class  variable,  quality,  follows  a  normal distribution or is nearly normal.
+```{r}
+hist(wine$quality)
+```
+
+## Step 2: Exploring and Preparing the Data
+```{r}
+wine_train <- wine[1:3750, ] 
+wine_test <- wine[3751:4898, ]
+```
+
+## Step 3: Training a Model on the Data
+```{r}
+if (!require("rpart")) {
+install.packages("rpart")
+library(rpart)
+}
+if (!require("rpart.plot")) {
+install.packages("rpart.plot")
+library(rpart.plot)
+}
+m.rpart <- rpart(quality ~ ., data=wine_train)
+summary(m.rpart)
+rpart.plot(m.rpart, digits=3)
+```
+
+```{r}
+p.rpart <- predict(m.rpart, wine_test)
+summary(p.rpart)
+```
+
+```{r}
+summary(wine_test$quality)
+```
+
+```{r}
+cor(p.rpart, wine_test$quality)
+```
+## Q3- What is your interpretation about this amount of RMSE?
+### The root-mean-square error is 0.537, the lower RMSE value, the more model fit the observed data, and 0.537 is still not great.
+
+#  Method 4. News Popularity
+## Step 1: Collecting the Data
+```{r}
+news <- read.csv("C:/Users/zeemo/Desktop/Files/Data/RStudio/OnlineNewsPopularity_for_R.csv")
+str(news)
+```
+
+```{r}
+newsShort <- data.frame(news$n_tokens_title, news$n_tokens_content, news$n_unique_tokens, news$n_non_stop_words, news$num_hrefs, news$num_imgs, news$num_videos, news$average_token_length, news$num_keywords, news$kw_max_max, news$global_sentiment_polarity, news$avg_positive_polarity, news$title_subjectivity, news$title_sentiment_polarity, news$abs_title_subjectivity, news$abs_title_sentiment_polarity, news$shares)
+
+colnames(newsShort) <- c("n_tokens_title", "n_tokens_content", "n_unique_tokens", "n_non_stop_words", "num_hrefs", "num_imgs", "num_videos", "average_token_length", "num_keywords", "kw_max_max", "global_sentiment_polarity", "avg_positive_polarity", "title_subjectivity", "title_sentiment_polarity", "abs_title_subjectivity", "abs_title_sentiment_polarity", "shares")
+str(newsShort)
+```
+
+## Step 2: Pre-processing
+```{r}
+newsShort$popular = rep('na', nrow(newsShort))
+for(i in 1:39644) {
+     if(newsShort$shares[i] >= 1400) {
+         newsShort$popular[i] = "1"} 
+     else {newsShort$popular[i] = "0"}
+}
+newsShort$shares = newsShort$popular
+newsShort$shares <- as.factor(newsShort$shares)
+set.seed(12345)
+
+news_rand <- newsShort[order(runif(10000)), ]
+#Split the data into training and test datasets
+news_train <- news_rand[1:9000, ]
+news_test <- news_rand[9001:10000, ]
+
+prop.table(table(news_train$shares))
+```
+
+```{r}
+prop.table(table(news_test$shares))
+```
+## Step 3: Modeling and evaluation
+```{r}
+library("C50")
+news_model <- C5.0(news_train[-17], news_train$shares)
+summary(news_model)
+```
+
+```{r}
+news_pred <- predict(news_model, news_test)
+(p <- table(news_pred, news_test$shares))
+```
+
+```{r}
+(Accuracy <- sum(diag(p))/sum(p)*100)
+```
+
+## Q4-Try decision tree and random forest and evaluate the model
+## Step 1: RANDOM FOREST
+```{r}
+news <- read.csv("C:/Users/zeemo/Desktop/Files/Data/RStudio/OnlineNewsPopularity_for_R.csv")
+news <- news[,-(1:2)]
+```
+### Check for outliers
+```{r}
+news=news[!news$n_unique_tokens==701,]
+```
+### minify instances
+```{r}
+newsShort <- data.frame(news$n_tokens_title, news$n_tokens_content, news$n_unique_tokens, news$n_non_stop_words, news$num_hrefs, news$num_imgs, news$num_videos, news$average_token_length, news$num_keywords, news$kw_max_max, news$global_sentiment_polarity, news$avg_positive_polarity, news$title_subjectivity, news$title_sentiment_polarity, news$abs_title_subjectivity, news$abs_title_sentiment_polarity, news$shares)
+colnames(newsShort) <- c("n_tokens_title", "n_tokens_content", "n_unique_tokens", "n_non_stop_words", "num_hrefs", "num_imgs", "num_videos", "average_token_length", "num_keywords", "kw_max_max", "global_sentiment_polarity", "avg_positive_polarity", "title_subjectivity", "title_sentiment_polarity", "abs_title_subjectivity", "abs_title_sentiment_polarity", "shares")
+```
+### Standardize the dataset
+```{r}
+for(i in ncol(news)-1){ 
+  news[,i]<-scale(news[,i], center = TRUE, scale = TRUE)
+}
+```
+### Define popular articles
+```{r}
+newsShort$shares <- as.factor(ifelse(newsShort$shares > 1400,1,0))
+set.seed(12345)
+news_rand <- newsShort[order(runif(39643)), ]
+news_train <- news_rand[1:3964, ]
+news_test <- news_rand[3965:39643, ]
+news_train$shares <- as.factor(news_train$shares)
+random_modelNews <- randomForest(news_train$shares ~ . , data= news_train)
+```
+### Model training
+```{r}
+cred_pridRF <- predict(random_modelNews, news_test)
+(p2 <- table(cred_pridRF, news_test$shares))
+```
+```{r}
+(Accuracy <- sum(diag(p2))/sum(p2)*100)
+```
+```{r}
+importance(random_modelNews)
+```
+## Step 2: Decision Tree
+```{r}
+news_model <- C5.0(news_train[-17], news_train$shares)
+summary(news_model)
+```
+### Model training
+```{r}
+news_pred <- predict(news_model, news_test)
+CrossTable(news_test$shares, news_pred, prop.chisq = FALSE, prop.c = FALSE, prop.r = FALSE, dnn = c('actual shares', 'predicted shares'))
+```
+```{r}
+(p3 <- table(news_pred, news_test$shares))
+```
+```{r}
+(Accuracy <- sum(diag(p3))/sum(p3)*100)
+```
+
