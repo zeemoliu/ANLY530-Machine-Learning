@@ -1,0 +1,295 @@
+```{r, echo=FALSE}
+knitr::opts_chunk$set(error = TRUE)
+```
+---
+title: "ANLY Lab 2"
+author: "Zimo Liu"
+date: "9/10/2020"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Laboratory 2: Naïve Bayes Classifiers, Part 1
+### Q1- (one thing to make sure you do!): Remember that the class variable needs to be a categorical data type in order to build a Naïve Bayes Classifier. This means that you’ll need to convert your class variable. ###Next, use a 75%/25% split for training and test data, i.e. use 75% of the records for the training set and 25% of the records for the test set. Report the number of missing values you find in the data in your results report. Use the randomization seed of 12345.
+
+```{r cars}
+creditData  <- read.csv("C:/Users/zeemo/Desktop/Files/Data/RStudio/530/creditData.csv")
+sum(is.na(creditData))
+```
+```{r}
+str(creditData)
+```
+```{r}
+creditData$Creditability <- as.factor(creditData$Creditability)
+creditData$Account.Balance <- as.factor(creditData$Account.Balance)
+creditData$Payment.Status.of.Previous.Credit <- as.factor(creditData$Payment.Status.of.Previous.Credit)
+creditData$Purpose <- as.factor(creditData$Purpose)
+creditData$Value.Savings.Stocks <- as.factor(creditData$Value.Savings.Stocks)
+creditData$Length.of.current.employment <- as.factor(creditData$Length.of.current.employment)
+creditData$Instalment.per.cent <- as.factor(creditData$Instalment.per.cent)
+creditData$Sex...Marital.Status <- as.factor(creditData$Sex...Marital.Status)
+creditData$Guarantors <- as.factor(creditData$Guarantors)
+creditData$Duration.in.Current.address <- as.factor(creditData$Duration.in.Current.address)
+creditData$Most.valuable.available.asset <- as.factor(creditData$Most.valuable.available.asset)
+creditData$Concurrent.Credits <- as.factor(creditData$Concurrent.Credits)
+creditData$Type.of.apartment <- as.factor(creditData$Type.of.apartment)
+creditData$No.of.Credits.at.this.Bank <- as.factor(creditData$No.of.Credits.at.this.Bank)
+creditData$Occupation <- as.factor(creditData$Occupation)
+creditData$No.of.dependents <- as.factor(creditData$No.of.dependents)
+creditData$Telephone <- as.factor(creditData$Telephone)
+creditData$Foreign.Worker <- as.factor(creditData$Foreign.Worker)
+
+str(creditData)
+```
+
+### Q2- Compute the percentage of both classes similar to what you did in lab 1 and see if the distribution of both classes preserved for both training and testing data.
+
+```{r}
+prop.table(table(credit_train$default))
+prop.table(table(credit_train$Creditability))
+```
+
+```{r}
+library(naivebayes)
+```
+
+```{r}
+naive_model <- naive_bayes(as.character(Creditability) ~ ., data= credit_train)
+naive_model
+```
+
+```{r}
+conf_nat <- table(predict(naive_model, credit_test), credit_test$Creditability)
+```
+```{r}
+Accuracy <- sum(diag(conf_nat))/sum(conf_nat)*100
+Accuracy
+```
+
+## Laboratory 2: PArt 2
+
+```{r}
+library(caret)
+```
+
+```{r}
+creditData1  <- read.csv("C:\\Users\\zeemo\\Desktop\\Files\\Data\\RStudio\\530\\creditData.csv")
+credit_rand <- creditData1[order(runif(1000)), ]
+creditDataScaled <- scale(credit_rand[,2:ncol(credit_rand)], center=TRUE, scale = TRUE)
+C <- cor(creditDataScaled)
+highlycor <- findCorrelation(C, 0.30)
+```
+
+```{r}
+creditData1$Creditability <- as.factor(creditData1$Creditability)
+creditData1$Account.Balance <- as.factor(creditData1$Account.Balance)
+creditData1$Payment.Status.of.Previous.Credit <- as.factor(creditData1$Payment.Status.of.Previous.Credit)
+creditData1$Purpose <- as.factor(creditData1$Purpose)
+creditData1$Value.Savings.Stocks <- as.factor(creditData1$Value.Savings.Stocks)
+creditData1$Length.of.current.employment <- as.factor(creditData1$Length.of.current.employment)
+creditData1$Instalment.per.cent <- as.factor(creditData1$Instalment.per.cent)
+creditData1$Sex...Marital.Status <- as.factor(creditData1$Sex...Marital.Status)
+creditData1$Guarantors <- as.factor(creditData1$Guarantors)
+creditData1$Duration.in.Current.address <- as.factor(creditData1$Duration.in.Current.address)
+creditData1$Most.valuable.available.asset <- as.factor(creditData1$Most.valuable.available.asset)
+creditData1$Concurrent.Credits <- as.factor(creditData1$Concurrent.Credits)
+creditData1$Type.of.apartment <- as.factor(creditData1$Type.of.apartment)
+creditData1$No.of.Credits.at.this.Bank <- as.factor(creditData1$No.of.Credits.at.this.Bank)
+creditData1$Occupation <- as.factor(creditData1$Occupation)
+creditData1$No.of.dependents <- as.factor(creditData1$No.of.dependents)
+creditData1$Telephone <- as.factor(creditData1$Telephone)
+creditData1$Foreign.Worker <- as.factor(creditData1$Foreign.Worker)
+
+credit_rand <- creditData1[order(runif(1000)), ]
+
+filteredData <- credit_rand[, -(highlycor[5]+1)]
+filteredTraining <- filteredData[1:750, ]
+filteredTest <- filteredData[751:1000, ]
+```
+
+```{r}
+library(naivebayes)
+nb_model <- naive_bayes(Creditability ~ ., data=filteredTraining)
+```
+
+```{r}
+filteredTestPred <- predict(nb_model, newdata = filteredTest)
+```
+```{r}
+conf_nat <- table(filteredTestPred, filteredTest$Creditability)
+
+Accuracy <- sum(diag(conf_nat))/sum(conf_nat)*100
+Accuracy
+```
+### Q3- What is the accuracy this time? Be sure to include in your results report whether or not, after all this work, the performance of your Naïve Bayes Classifier was improved.
+
+### ANSWER - Q3: As we can see from above the accuracy has now dropped to 74.4% from previous accuracy of 80%. The earlier model performed better here.
+
+```{r}
+letterdata  <- read.csv("C:\\Users\\zeemo\\Desktop\\Files\\Data\\RStudio\\530\\letterdata.csv")
+str(letterdata)
+```
+
+```{r}
+letters_train <- letterdata[1:18000, ]
+letters_test <- letterdata[18001:20000, ]
+library(kernlab)
+```
+
+```{r}
+letter_classifier <- ksvm(letter ~., data= letters_train,kernel="vanilladot")
+```
+```{r}
+summary(letter_classifier)
+```
+
+```{r}
+letter_predictions <- predict(letter_classifier, letters_test)
+(p<- table(letter_predictions,letters_test$letter))
+```
+```{r}
+(accuracy <- sum(diag(p))/sum(p)*100)
+```
+### Using kernel as “vanilladot” we get an accuracy of 83.95%. 
+
+## Q4
+
+```{r}
+letter_classifier <- ksvm(letter ~ ., data = letters_train, kernel = "rbfdot")
+
+summary(letter_classifier)
+```
+```{r}
+letter_predictions <- predict(letter_classifier, letters_test)
+(p<- table(letter_predictions,letters_test$letter))
+```
+
+```{r}
+(accuracy <- sum(diag(p))/sum(p)*100)
+```
+
+### Q4 - Answer: The accuracy increases to 93.45% when using “rbfdot” as a kernel. Lets check “polydot”.
+```{r}
+letter_classifier <- ksvm(letter ~ ., data = letters_train, kernel = "polydot")
+```
+```{r}
+summary(letter_classifier)
+```
+```{r}
+letter_predictions <- predict(letter_classifier, letters_test)
+(p<- table(letter_predictions,letters_test$letter))
+```
+
+```{r}
+(accuracy <- sum(diag(p))/sum(p)*100)
+```
+### Q4 - Answer: We get 84% accuracy using "polydot" as kernel.
+
+## PART 4
+```{r}
+news <- read.csv("C:/Users/zeemo/Desktop/Files/Data/RStudio/530/OnlineNewsPopularity_for_R.csv")
+```
+### Check for missing data
+```{r}
+sum(is.na(news))
+```
+
+```{r}
+#remove non-predictive variables
+news <- news[,-(1:2)]
+
+#Check for outliers
+news=news[!news$n_unique_tokens==701,]
+
+#Keep variables that are meaningful for our model
+newsShort <- data.frame(news$n_tokens_title, news$n_tokens_content, news$n_unique_tokens, news$n_non_stop_words, news$num_hrefs, news$num_imgs, news$num_videos, news$average_token_length, news$num_keywords, news$kw_max_max, news$global_sentiment_polarity, news$avg_positive_polarity, news$title_subjectivity, news$title_sentiment_polarity, news$abs_title_subjectivity, news$abs_title_sentiment_polarity, news$shares)
+
+colnames(newsShort) <- c("n_tokens_title", "n_tokens_content", "n_unique_tokens", "n_non_stop_words", "num_hrefs", "num_imgs", "num_videos", "average_token_length", "num_keywords", "kw_max_max", "global_sentiment_polarity", "avg_positive_polarity", "title_subjectivity", "title_sentiment_polarity", "abs_title_subjectivity", "abs_title_sentiment_polarity", "shares")
+
+#Standardize the dataset
+for(i in ncol(news)-1){ 
+  news[,i]<-scale(news[,i], center = TRUE, scale = TRUE)
+}
+
+#Define articles with shares greater than 1400 as popular articles
+newsShort$shares <- as.factor(ifelse(newsShort$shares > 1400,1,0))
+```
+
+### Applying Naive-Bayes on New Popularity Dataset after pre-processing the original dataset as above.
+
+```{r}
+set.seed(12345)
+news_rand <- newsShort[order(runif(39643)), ]
+news_train <- news_rand[1:35678, ]
+news_test <- news_rand[35679:39643, ]
+
+prop.table(table(news_train$shares))
+```
+```{r}
+prop.table(table(news_test$shares))
+```
+```{r}
+naive_modelNews <- naive_bayes(as.character(shares) ~ ., data= news_train)
+naive_modelNews
+```
+```{r}
+conf_natNews <- table(predict(naive_modelNews, news_test), news_test$shares)
+```
+```{r}
+Accuracy <- sum(diag(conf_natNews))/sum(conf_natNews)*100
+Accuracy
+```
+### We get 54% by using Naive-Bayes for News popularity dataset. Lets try using SVM models.
+```{r}
+news_classifier <- ksvm(shares ~., data= news_train,kernel="vanilladot")
+```
+```{r}
+summary(news_classifier)
+```
+
+```{r}
+news_predictions <- predict(news_classifier, news_test)
+(p<- table(news_predictions,news_test$shares))
+```
+```{r}
+(accuracy <- sum(diag(p))/sum(p)*100)
+```
+### Result is 55.51, let's try one another
+
+```{r}
+news_classifier <- ksvm(shares ~., data= news_train,kernel="rbfdot")
+
+summary(news_classifier)
+```
+
+```{r}
+news_predictions <- predict(news_classifier, news_test)
+(p<- table(news_predictions,news_test$shares))
+```
+```{r}
+(accuracy <- sum(diag(p))/sum(p)*100)
+```
+
+###Using rbfdot as kernel we get an accuracy of 59% which is better.
+```{r}
+news_classifier <- ksvm(shares ~., data= news_train,kernel="polydot")
+```
+
+```{r}
+summary(news_classifier)
+```
+```{r}
+news_predictions <- predict(news_classifier, news_test)
+(p<- table(news_predictions,news_test$shares))
+```
+
+```{r}
+(accuracy <- sum(diag(p))/sum(p)*100)
+```
+### Using polydot as an SVM kernel is similar to that of vanilladot. The highest accuracy is rbfdot for news popularity dataset.
